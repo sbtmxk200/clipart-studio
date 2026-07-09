@@ -1,0 +1,55 @@
+// Domain types — pure, no external dependencies
+// Design Ref: §3.1 Entity Definition
+
+export type AccountType = 'teacher' | 'student' | 'school' | 'school_staff' | 'general';
+export type SchoolLevel = 'elementary' | 'middle' | 'high';
+export type ImageStatus = 'pending' | 'saved' | 'discarded';
+export type GenerationMode = 'text2img' | 'img2img' | 'upscale';
+export type JobStatus = 'queued' | 'running' | 'partial' | 'done' | 'failed';
+export type ImageModel = 'gpt-image-1' | 'flux-schnell';
+
+export interface Profile {
+  id: string;
+  email: string;
+  accountType: AccountType;
+  credits: number;
+  creditsResetAt: string | null;
+  createdAt: string;
+}
+
+export interface SchoolProfile {
+  userId: string;
+  schoolName: string;
+  homepageUrl: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  mascotDesc: string | null;
+  mascotRefUrl: string | null;
+  buildingRefUrl: string | null;
+  styleDesc: string | null;
+  basePrompt: string | null;
+  schoolLevel: SchoolLevel | null;
+  updatedAt: string;
+}
+
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+  teacher: '선생님',
+  student: '학생',
+  school: '학교',
+  school_staff: '학교 관계자',
+  general: '일반',
+};
+
+export const SCHOOL_LEVEL_LABELS: Record<SchoolLevel, string> = {
+  elementary: '초등학교',
+  middle: '중학교',
+  high: '고등학교',
+};
+
+export const ACCOUNT_TYPE_BADGE: Record<AccountType, string> = {
+  teacher: '👤',
+  student: '🎒',
+  school: '🏫',
+  school_staff: '🏫',
+  general: '👤',
+};
