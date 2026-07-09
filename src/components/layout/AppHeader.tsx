@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { CreditBadge } from '@/features/auth/components/CreditBadge';
+import { useAuthStore } from '@/lib/store/authStore';
 import { createSupabaseBrowserClient } from '@/services/supabase/client';
 
 export function AppHeader({
@@ -17,6 +18,10 @@ export function AppHeader({
 }) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
+  // Live credits from Zustand — updated by useCreateJob / useJobStream after batch generation.
+  // Falls back to server-rendered `credits` until the first client mutation lands.
+  const storeCredits = useAuthStore((s) => s.profile?.credits);
+  const displayCredits = storeCredits ?? credits;
 
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
@@ -35,7 +40,7 @@ export function AppHeader({
           ClipArt Studio
         </Link>
         <div className="flex items-center gap-3">
-          <CreditBadge credits={credits} creditsResetAt={creditsResetAt} />
+          <CreditBadge credits={displayCredits} creditsResetAt={creditsResetAt} />
           <Link
             href="/profile"
             className="rounded-md px-3 py-1.5 text-sm font-medium hover:bg-accent"
