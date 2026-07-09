@@ -8,7 +8,12 @@ import { openaiImageGen } from './openai';
 import type { ImageGenAdapter } from './adapter';
 import type { SchoolProfile } from '@/types/domain';
 
-export type { ImageGenAdapter, GenerateInput, GenerateOutput } from './adapter';
+export type {
+  ImageGenAdapter,
+  GenerateInput,
+  GenerateOutput,
+  ReferenceImage,
+} from './adapter';
 export { ImageGenError } from './adapter';
 
 /**

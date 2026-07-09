@@ -1,6 +1,7 @@
 // Design Ref: §8.1 AI (1순위) OpenAI gpt-image-1
-// Supports text2img and img2img. Uses fetch directly (no SDK) to keep bundle lean
-// and to make it trivial to swap the base URL for a proxy (e.g. sk-jiran- gateway).
+// Supports text2img (/v1/images/generations) and img2img (/v1/images/edits).
+// Uses fetch directly (no SDK) to keep bundle lean and to make it trivial to
+// swap the base URL for a proxy.
 
 import { ImageGenError } from './adapter';
 
@@ -22,7 +23,9 @@ function randomSeed() {
   return Math.floor(Math.random() * 2 ** 31);
 }
 
-async function callGenerations(body: unknown) {
+type ImagePayload = { b64_json?: string; url?: string };
+
+async function callGenerations(body: unknown): Promise<ImagePayload> {
   const res = await fetch(`${baseUrl()}/images/generations`, {
     method: 'POST',
     headers: {
@@ -40,13 +43,37 @@ async function callGenerations(body: unknown) {
     );
   }
 
-  const json = (await res.json()) as { data: Array<{ b64_json?: string; url?: string }> };
+  const json = (await res.json()) as { data: ImagePayload[] };
   const first = json.data?.[0];
   if (!first) throw new ImageGenError('OpenAI empty response', false);
   return first;
 }
 
-async function toBytes(payload: { b64_json?: string; url?: string }): Promise<Buffer> {
+async function callEdits(form: FormData): Promise<ImagePayload> {
+  const res = await fetch(`${baseUrl()}/images/edits`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey()}`,
+      // Content-Type is set by fetch automatically for FormData (multipart boundary)
+    },
+    body: form,
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new ImageGenError(
+      `OpenAI edits failed: ${res.status} ${text.slice(0, 300)}`,
+      res.status >= 500 || res.status === 429,
+    );
+  }
+
+  const json = (await res.json()) as { data: ImagePayload[] };
+  const first = json.data?.[0];
+  if (!first) throw new ImageGenError('OpenAI empty edits response', false);
+  return first;
+}
+
+async function toBytes(payload: ImagePayload): Promise<Buffer> {
   if (payload.b64_json) return Buffer.from(payload.b64_json, 'base64');
   if (payload.url) {
     const r = await fetch(payload.url);
@@ -60,16 +87,35 @@ export const openaiImageGen: ImageGenAdapter = {
   model: 'gpt-image-1',
   async generate(input: GenerateInput): Promise<GenerateOutput> {
     const seed = input.seed ?? randomSeed();
-    // gpt-image-1 returns b64_json by default and rejects response_format.
-    const body = {
-      model: 'gpt-image-1',
-      prompt: input.prompt,
-      n: 1,
-      size: '1024x1024',
-    };
-    // Note: gpt-image-1 currently ignores explicit seeds; we still record one
-    // for local traceability and for compatibility with adapters that honor it.
-    const payload = await callGenerations(body);
+
+    let payload: ImagePayload;
+    if (input.mode === 'img2img') {
+      if (!input.referenceImage) {
+        throw new ImageGenError('img2img requires referenceImage bytes', false);
+      }
+      // gpt-image-1 edits API: PNG or WebP file, up to 25MB, square. Our generated
+      // images are 1024x1024 so the size constraint is already satisfied.
+      const ref = input.referenceImage;
+      const ext = ref.contentType === 'image/webp' ? 'webp' : 'png';
+      const filename = `reference.${ext}`;
+      const blob = new Blob([new Uint8Array(ref.bytes)], { type: ref.contentType });
+      const form = new FormData();
+      form.append('model', 'gpt-image-1');
+      form.append('prompt', input.prompt);
+      form.append('n', '1');
+      form.append('size', '1024x1024');
+      form.append('image', blob, filename);
+      payload = await callEdits(form);
+    } else {
+      // gpt-image-1 returns b64_json by default and rejects response_format.
+      payload = await callGenerations({
+        model: 'gpt-image-1',
+        prompt: input.prompt,
+        n: 1,
+        size: '1024x1024',
+      });
+    }
+
     const imageBytes = await toBytes(payload);
     return {
       imageBytes,

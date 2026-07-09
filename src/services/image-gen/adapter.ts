@@ -4,12 +4,17 @@
 
 import type { GenerationMode, ImageModel } from '@/types/domain';
 
+export interface ReferenceImage {
+  bytes: Buffer;
+  contentType: string;
+}
+
 export interface GenerateInput {
   prompt: string;
   negativePrompt?: string;
   seed?: number;
-  /** Reference image bytes for img2img (base64 data URL or raw base64). */
-  referenceImage?: string;
+  /** Reference image for img2img. Required when mode === 'img2img'. */
+  referenceImage?: ReferenceImage;
   mode: GenerationMode;
 }
 

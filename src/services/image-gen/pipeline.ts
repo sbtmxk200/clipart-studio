@@ -5,10 +5,11 @@
 import { randomUUID } from 'node:crypto';
 
 import { primaryAdapter, applyDiversityHint, mergePrompt } from '@/services/image-gen';
-import { putObject } from '@/services/r2/upload';
+import { publicUrl, putObject } from '@/services/r2/upload';
 import { createSupabaseServiceClient } from '@/services/supabase/server';
 import { taggingAdapter } from '@/services/tagging';
 
+import type { ReferenceImage } from '@/services/image-gen';
 import type { GenerationJob, SchoolProfile } from '@/types/domain';
 
 export interface PipelineResult {
@@ -22,6 +23,29 @@ interface RunOneParams {
   order: number; // 0-based within the batch
   schoolProfile: SchoolProfile | null;
   isDiversityChunk: boolean;
+  /** Preloaded reference bytes for chaining; caller fetches once per batch. */
+  referenceImage?: ReferenceImage | null;
+}
+
+/**
+ * Preload the reference image once for a chaining batch. Callers should invoke
+ * this before the runOne loop and pass the result into each runOne call.
+ */
+export async function fetchReferenceImage(referenceImageId: string): Promise<ReferenceImage> {
+  const supabase = createSupabaseServiceClient();
+  const { data: row } = await supabase
+    .from('images')
+    .select('r2_key')
+    .eq('id', referenceImageId)
+    .maybeSingle();
+  if (!row) throw new Error(`reference image not found: ${referenceImageId}`);
+
+  const url = publicUrl(row.r2_key as string);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`R2 fetch failed: ${res.status}`);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  const contentType = res.headers.get('content-type') ?? 'image/png';
+  return { bytes, contentType };
 }
 
 /**
@@ -33,15 +57,22 @@ export async function runOne({
   order,
   schoolProfile,
   isDiversityChunk,
+  referenceImage,
 }: RunOneParams): Promise<PipelineResult> {
   const adapter = primaryAdapter();
 
   const merged = mergePrompt(job.prompt, schoolProfile, job.schoolProfileApplied);
   const finalPrompt = isDiversityChunk ? applyDiversityHint(merged, order) : merged;
 
+  const chaining = !!job.referenceImageId;
+  if (chaining && !referenceImage) {
+    throw new Error('chaining job requires referenceImage bytes');
+  }
+
   const gen = await adapter.generate({
     prompt: finalPrompt,
-    mode: job.referenceImageId ? 'img2img' : 'text2img',
+    mode: chaining ? 'img2img' : 'text2img',
+    referenceImage: referenceImage ?? undefined,
   });
 
   const imageId = randomUUID();
@@ -65,8 +96,9 @@ export async function runOne({
     seed: gen.seed,
     r2_key: r2Key,
     batch_id: job.id,
-    generation_mode: job.referenceImageId ? 'img2img' : 'text2img',
+    generation_mode: chaining ? 'img2img' : 'text2img',
     reference_image_id: job.referenceImageId,
+    parent_image_id: job.referenceImageId,
     school_profile_applied: job.schoolProfileApplied,
     status: 'saved',
     pending_expires_at: null,

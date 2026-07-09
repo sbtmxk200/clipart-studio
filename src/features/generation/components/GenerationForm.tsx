@@ -1,9 +1,15 @@
 'use client';
 
 // Design Ref: §5.4 Generation Page checklist — prompt, batch size, diversity, school toggle, submit
-// Plan SC: FR-05 batch request, FR-06 diversity, FR-17 school profile injection
+// Optional parent prop switches this form into chaining (i2i) mode:
+//   - reference thumbnail is shown
+//   - prompt is pre-filled from the parent
+//   - PresetChips are rendered
+//   - generationMode = 'img2img', referenceImageId is passed to the job
 
-import { Sparkles } from 'lucide-react';
+import { Link as LinkIcon, Sparkles, X } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -11,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { PresetChips } from '@/features/generation/components/PresetChips';
 import { useCreateJob, CreateJobError } from '@/features/generation/hooks/useCreateJob';
 import { SchoolStyleToggle } from '@/features/generation/components/SchoolStyleToggle';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -22,23 +29,34 @@ import { createJobSchema } from '@/types/schemas';
 import type { BatchSize } from '@/types/domain';
 import type { FormEvent } from 'react';
 
+interface ParentInfo {
+  id: string;
+  prompt: string;
+  thumbnailUrl: string;
+}
+
 interface GenerationFormProps {
   hasSchoolProfile: boolean;
   schoolName: string | null;
   initialCredits: number;
+  parent?: ParentInfo | null;
 }
 
 export function GenerationForm({
   hasSchoolProfile,
   schoolName,
   initialCredits,
+  parent,
 }: GenerationFormProps) {
+  const router = useRouter();
   const storeCredits = useAuthStore((s) => s.profile?.credits);
   const credits = storeCredits ?? initialCredits;
   const streamStatus = useGenerationStore((s) => s.streamStatus);
   const inFlight = streamStatus === 'starting' || streamStatus === 'streaming';
 
-  const [prompt, setPrompt] = useState('');
+  const chaining = !!parent;
+
+  const [prompt, setPrompt] = useState<string>(parent?.prompt ?? '');
   const [batchSize, setBatchSize] = useState<BatchSize>(5);
   const [diversityLevel, setDiversityLevel] = useState(0);
   const [schoolProfileApplied, setSchoolProfileApplied] = useState(hasSchoolProfile);
@@ -55,9 +73,9 @@ export function GenerationForm({
       prompt,
       batchSize,
       diversityLevel,
-      referenceImageId: null,
+      referenceImageId: parent?.id ?? null,
       schoolProfileApplied,
-      generationMode: 'text2img',
+      generationMode: chaining ? 'img2img' : 'text2img',
     });
     if (!parsed.success) {
       const first = parsed.error.issues[0];
@@ -82,16 +100,54 @@ export function GenerationForm({
     }
   }
 
+  function clearParent() {
+    // Drop ?parent= from URL — server re-renders in plain text2img mode.
+    router.replace('/generate');
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" aria-hidden="true" />
-          AI 이미지 생성
+          {chaining ? <LinkIcon className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+          {chaining ? '이 이미지로 생성 (i2i)' : 'AI 이미지 생성'}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleFormSubmit} className="space-y-5">
+          {chaining && parent && (
+            <div className="flex items-start gap-3 rounded-md border bg-muted/30 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={parent.thumbnailUrl}
+                alt="참조 이미지"
+                className="h-16 w-16 shrink-0 rounded object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium">참조 이미지</p>
+                <p className="line-clamp-2 text-xs text-muted-foreground" title={parent.prompt}>
+                  {parent.prompt}
+                </p>
+                <Link
+                  href={`/image/${parent.id}`}
+                  className="text-[10px] text-primary underline-offset-4 hover:underline"
+                >
+                  원본 상세 보기
+                </Link>
+              </div>
+              <button
+                type="button"
+                onClick={clearParent}
+                disabled={inFlight}
+                className="rounded p-1 text-muted-foreground hover:bg-accent"
+                aria-label="참조 이미지 해제"
+                title="참조 이미지 해제"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="prompt">프롬프트</Label>
             <Textarea
@@ -102,6 +158,14 @@ export function GenerationForm({
               onChange={(e) => setPrompt(e.target.value)}
               disabled={inFlight}
             />
+            {chaining && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-xs text-muted-foreground">
+                  프리셋 — 클릭해서 원본 프롬프트에 변형 힌트를 추가하세요
+                </p>
+                <PresetChips value={prompt} onChange={setPrompt} disabled={inFlight} />
+              </div>
+            )}
           </div>
 
           <SchoolStyleToggle

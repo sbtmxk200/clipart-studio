@@ -5,6 +5,7 @@
 // Non-Negotiable Rule 3: AI 라벨 노출
 
 import { Download, Eye, EyeOff, Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -48,12 +49,16 @@ export function LibraryCard({ image }: { image: LibraryImage }) {
 
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card shadow-sm">
-      <div className="relative aspect-square w-full bg-muted">
+      <Link
+        href={`/image/${image.id}`}
+        aria-label="상세 보기"
+        className="relative block aspect-square w-full bg-muted"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={image.thumbnailUrl}
           alt={image.prompt}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
           loading="lazy"
         />
         <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
@@ -64,7 +69,7 @@ export function LibraryCard({ image }: { image: LibraryImage }) {
             </span>
           )}
         </div>
-      </div>
+      </Link>
 
       <div className="space-y-2 p-3">
         <p className="line-clamp-2 text-xs text-muted-foreground" title={image.prompt}>

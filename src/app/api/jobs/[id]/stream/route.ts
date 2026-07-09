@@ -3,10 +3,11 @@
 // Behavior: chunk-parallel generation, per-slot refund on failure, final job status update.
 
 import { publicUrl } from '@/services/r2/upload';
-import { runOne } from '@/services/image-gen/pipeline';
+import { fetchReferenceImage, runOne } from '@/services/image-gen/pipeline';
 import { refundCredits } from '@/services/credit';
 import { createSupabaseServerClient, createSupabaseServiceClient } from '@/services/supabase/server';
 
+import type { ReferenceImage } from '@/services/image-gen';
 import type { GenerationJob, SchoolProfile } from '@/types/domain';
 
 const CHUNK_SIZE = 5;
@@ -100,6 +101,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       let fatal: Error | null = null;
 
       try {
+        // Preload the reference image once per batch when chaining, so we don't
+        // fetch it from R2 for every runOne call inside the chunks.
+        let referenceImage: ReferenceImage | null = null;
+        if (job.referenceImageId) {
+          referenceImage = await fetchReferenceImage(job.referenceImageId);
+        }
+
         const totalSlots = job.batchSize;
         const chunkCount = Math.ceil(totalSlots / CHUNK_SIZE);
 
@@ -115,6 +123,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
                 order: chunkStart + i,
                 schoolProfile,
                 isDiversityChunk: isDiversity,
+                referenceImage,
               }),
             ),
           );
