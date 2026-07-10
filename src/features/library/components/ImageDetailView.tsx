@@ -3,7 +3,7 @@
 // Design Ref: §5.4 Image Detail Page — full image + metadata + actions
 // Non-Negotiable Rule 3: AIGeneratedBadge required.
 
-import { ArrowLeft, Download, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -197,19 +197,15 @@ export function ImageDetailView({ id }: { id: string }) {
               {image.isOwner && (
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant={image.isPublic ? 'secondary' : 'outline'}
                   onClick={handlePublishToggle}
                   disabled={publish.isPending}
                   title={image.isPublic ? '비공개로 전환' : '워크스페이스에 공개'}
-                  aria-label={image.isPublic ? '비공개로 전환' : '공개로 전환'}
                 >
                   {publish.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : image.isPublic ? (
-                    <EyeOff className="h-3 w-3" />
-                  ) : (
-                    <Eye className="h-3 w-3" />
-                  )}
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : null}
+                  {image.isPublic ? '비공개' : '공개'}
                 </Button>
               )}
             </div>
