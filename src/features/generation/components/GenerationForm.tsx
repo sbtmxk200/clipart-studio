@@ -127,7 +127,7 @@ export function GenerationForm({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {chaining ? <LinkIcon className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
-          {chaining ? '이 이미지로 생성 (i2i)' : 'AI 이미지 생성'}
+          {chaining ? '이 이미지로 생성 (i2i)' : 'AI 이미지 만들기'}
         </CardTitle>
       </CardHeader>
       <CardContent>

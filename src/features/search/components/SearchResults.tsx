@@ -95,7 +95,7 @@ export function SearchResults() {
               href={`/generate?prompt=${encodeURIComponent(q)}`}
               className={buttonVariants({ size: 'sm' })}
             >
-              &quot;{q}&quot; 로 AI 생성
+              &quot;{q}&quot; 로 AI 이미지 만들기
             </Link>
           </CardContent>
         </Card>

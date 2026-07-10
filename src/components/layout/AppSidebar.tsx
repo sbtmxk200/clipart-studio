@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: '/', label: '홈', icon: Home },
   { href: '/library', label: '내 라이브러리', icon: ImageIcon },
   { href: '/community', label: '워크스페이스', icon: Users },
-  { href: '/generate', label: 'AI 생성', icon: Sparkles },
+  { href: '/generate', label: 'AI 이미지 만들기', icon: Sparkles },
 ];
 
 interface AppSidebarProps {
