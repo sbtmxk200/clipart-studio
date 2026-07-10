@@ -5,7 +5,6 @@
 import Link from 'next/link';
 
 import { AIGeneratedBadge } from '@/components/ui/AIGeneratedBadge';
-import { AuthorBadge } from '@/features/community/components/AuthorBadge';
 
 import type { AccountType } from '@/types/domain';
 
@@ -75,17 +74,13 @@ export function HomeSection({
                   <AIGeneratedBadge />
                 </div>
               </div>
-              <div className="flex items-center justify-between gap-1 p-1.5">
-                <AuthorBadge
-                  authorType={image.authorType}
-                  authorSchoolName={image.authorSchoolName}
-                />
-                {image.downloadCount > 0 && (
+              {image.downloadCount > 0 && (
+                <div className="flex items-center justify-end gap-1 p-1.5">
                   <span className="text-[10px] tabular-nums text-muted-foreground">
                     ⬇ {image.downloadCount}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
             </Link>
           ))}
         </div>

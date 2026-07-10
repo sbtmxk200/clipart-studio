@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 
 import { AIGeneratedBadge } from '@/components/ui/AIGeneratedBadge';
 import { Button } from '@/components/ui/button';
-import { AuthorBadge } from '@/features/community/components/AuthorBadge';
 import { requestDownload } from '@/features/library/hooks/useMyImages';
 
 import type { CommunityImage } from '@/features/community/hooks/useCommunity';
@@ -61,12 +60,8 @@ export function CommunityCard({ image }: { image: CommunityImage }) {
       </Link>
 
       <div className="space-y-2 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <AuthorBadge
-            authorType={image.authorType}
-            authorSchoolName={image.authorSchoolName}
-          />
-          {image.downloadCount > 0 && (
+        {image.downloadCount > 0 && (
+          <div className="flex justify-end">
             <span
               className="inline-flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground"
               title="다운로드 횟수"
@@ -74,8 +69,8 @@ export function CommunityCard({ image }: { image: CommunityImage }) {
               <Download className="h-3 w-3" aria-hidden="true" />
               {image.downloadCount}
             </span>
-          )}
-        </div>
+          </div>
+        )}
         <p className="line-clamp-2 text-xs text-muted-foreground" title={image.prompt}>
           {image.prompt}
         </p>

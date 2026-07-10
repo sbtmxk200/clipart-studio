@@ -6,7 +6,6 @@
 import Link from 'next/link';
 
 import { AIGeneratedBadge } from '@/components/ui/AIGeneratedBadge';
-import { AuthorBadge } from '@/features/community/components/AuthorBadge';
 
 import type { SearchImage } from '@/features/search/hooks/useSearch';
 
@@ -35,10 +34,6 @@ export function SearchResultCard({ image }: { image: SearchImage }) {
         </div>
       </Link>
       <div className="space-y-1.5 p-3">
-        <AuthorBadge
-          authorType={image.authorType}
-          authorSchoolName={image.authorSchoolName}
-        />
         <p className="line-clamp-2 text-xs text-muted-foreground" title={image.prompt}>
           {image.prompt}
         </p>
