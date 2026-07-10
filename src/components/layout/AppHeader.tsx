@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { CreditBadge } from '@/features/auth/components/CreditBadge';
-import { SearchBar } from '@/features/search/components/SearchBar';
 import { useAuthStore } from '@/lib/store/authStore';
 import { createSupabaseBrowserClient } from '@/services/supabase/client';
 
@@ -36,11 +35,10 @@ export function AppHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="flex h-14 items-center gap-4 px-6">
+      <div className="flex h-14 items-center justify-between gap-4 px-6">
         <Link href="/" className="shrink-0 font-semibold">
           ClipArt Studio
         </Link>
-        <SearchBar className="mx-auto hidden max-w-md flex-1 md:block" />
         <div className="flex shrink-0 items-center gap-3">
           <CreditBadge credits={displayCredits} creditsResetAt={creditsResetAt} />
           <Link
