@@ -4,7 +4,7 @@
 // Policy: no delete, no pending state. All library images are permanent saved assets.
 // Non-Negotiable Rule 3: AI 라벨 노출
 
-import { Download, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -118,19 +118,15 @@ export function LibraryCard({ image }: { image: LibraryImage }) {
           <Button
             type="button"
             size="sm"
-            variant="ghost"
+            variant={image.isPublic ? 'secondary' : 'outline'}
             onClick={handlePublishToggle}
             disabled={publish.isPending}
-            aria-label={image.isPublic ? '비공개로 전환' : '공개로 전환'}
             title={image.isPublic ? '비공개로 전환' : '워크스페이스에 공개'}
           >
             {publish.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : image.isPublic ? (
-              <EyeOff className="h-3 w-3" />
-            ) : (
-              <Eye className="h-3 w-3" />
-            )}
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            ) : null}
+            {image.isPublic ? '비공개' : '공개'}
           </Button>
         </div>
       </div>
