@@ -18,7 +18,9 @@ ALTER TABLE images
   ADD COLUMN IF NOT EXISTS width  INT NOT NULL DEFAULT 1024,
   ADD COLUMN IF NOT EXISTS height INT NOT NULL DEFAULT 1024;
 
--- The workspace view mirrors images columns, so refresh it to expose width/height.
+-- The workspace view mirrors images columns. Postgres does not allow renaming
+-- existing view columns via CREATE OR REPLACE, so keep the original column
+-- order (from 021) intact and append width/height at the end.
 CREATE OR REPLACE VIEW public.community_images AS
 SELECT
   i.id,
@@ -36,8 +38,6 @@ SELECT
   i.reference_image_id,
   i.school_profile_applied,
   i.status,
-  i.width,
-  i.height,
   i.created_at,
   p.account_type AS author_type,
   sp.school_name AS author_school_name,
@@ -46,11 +46,10 @@ SELECT
       FROM public.download_events d
      WHERE d.image_id = i.id
        AND d.event_type = 'download'
-  ), 0)::BIGINT AS download_count
+  ), 0)::BIGINT AS download_count,
+  i.width,
+  i.height
 FROM public.images i
 JOIN public.profiles p ON i.user_id = p.id
 LEFT JOIN public.school_profiles sp ON i.user_id = sp.user_id
 WHERE i.is_public = TRUE AND i.status = 'saved';
-
-GRANT SELECT ON public.community_images TO authenticated;
-GRANT SELECT ON public.community_images TO service_role;
