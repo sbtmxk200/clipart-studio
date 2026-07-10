@@ -42,7 +42,7 @@ async function fetchCommunity(
   const params = new URLSearchParams({ sort });
   if (category) params.set('category', category);
   const res = await fetch(`/api/community?${params.toString()}`);
-  if (!res.ok) throw new Error('Community 피드를 불러오지 못했습니다');
+  if (!res.ok) throw new Error('워크스페이스 피드를 불러오지 못했습니다');
   const json = (await res.json()) as { data: CommunityResponse };
   return json.data;
 }

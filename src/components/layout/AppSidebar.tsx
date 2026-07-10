@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const NAV_ITEMS = [
   { href: '/', label: '홈', icon: Home },
   { href: '/library', label: '내 라이브러리', icon: ImageIcon },
-  { href: '/community', label: 'Community', icon: Users },
+  { href: '/community', label: '워크스페이스', icon: Users },
   { href: '/generate', label: 'AI 생성', icon: Sparkles },
 ];
 

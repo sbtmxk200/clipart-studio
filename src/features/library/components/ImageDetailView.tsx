@@ -76,7 +76,7 @@ export function ImageDetailView({ id }: { id: string }) {
   async function handlePublishToggle() {
     try {
       await publish.mutateAsync({ id: image.id, isPublic: !image.isPublic });
-      toast.success(!image.isPublic ? 'Community에 공개했어요' : '비공개로 전환했어요');
+      toast.success(!image.isPublic ? '워크스페이스에 공개했어요' : '비공개로 전환했어요');
       refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '변경 실패');
@@ -184,7 +184,7 @@ export function ImageDetailView({ id }: { id: string }) {
                   variant="ghost"
                   onClick={handlePublishToggle}
                   disabled={publish.isPending}
-                  title={image.isPublic ? '비공개로 전환' : 'Community에 공개'}
+                  title={image.isPublic ? '비공개로 전환' : '워크스페이스에 공개'}
                   aria-label={image.isPublic ? '비공개로 전환' : '공개로 전환'}
                 >
                   {publish.isPending ? (

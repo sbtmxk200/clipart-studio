@@ -17,7 +17,7 @@ export default async function CommunityPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Community</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">워크스페이스</h1>
         <p className="text-sm text-muted-foreground">
           다른 사용자가 공개한 이미지를 둘러보고, 마음에 드는 이미지를 참조로 새로 만들 수도 있어요.
         </p>
