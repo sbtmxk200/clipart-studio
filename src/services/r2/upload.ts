@@ -105,3 +105,65 @@ export function publicUrl(key: string): string {
   const base = env('R2_PUBLIC_URL').replace(/\/+$/, '');
   return `${base}/${encodeURI(key)}`;
 }
+
+/** Delete an R2 object. Safe to call for missing objects (R2 returns 204). */
+export async function deleteObject(key: string): Promise<void> {
+  const accountId = env('R2_ACCOUNT_ID');
+  const accessKeyId = env('R2_ACCESS_KEY_ID');
+  const secretAccessKey = env('R2_SECRET_ACCESS_KEY');
+  const bucket = env('R2_BUCKET_NAME');
+
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const region = 'auto';
+  const service = 's3';
+  const url = `https://${host}/${bucket}/${encodeURI(key)}`;
+
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const payloadHash = sha256Hex('');
+
+  const canonicalHeaders =
+    `host:${host}\n` +
+    `x-amz-content-sha256:${payloadHash}\n` +
+    `x-amz-date:${amzDate}\n`;
+  const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+
+  const canonicalRequest = [
+    'DELETE',
+    `/${bucket}/${encodeURI(key)}`,
+    '',
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join('\n');
+
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n');
+
+  const signingKey = signatureKey(secretAccessKey, dateStamp, region, service);
+  const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+
+  const authorization =
+    `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, ` +
+    `SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: authorization,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+    },
+  });
+
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`R2 DELETE failed: ${res.status} ${text.slice(0, 300)}`);
+  }
+}

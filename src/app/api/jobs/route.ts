@@ -62,6 +62,22 @@ export async function POST(request: Request) {
     throw err;
   }
 
+  // 업로드 참조 이미지 슬롯이 지정됐다면 R2 키를 해석해 job에 스냅샷으로 저장.
+  // 이후 사용자가 슬롯을 삭제해도 진행 중인 job은 영향 받지 않는다.
+  let customReferenceR2Key: string | null = null;
+  if (body.customReferenceId) {
+    const { data: ref } = await supabase
+      .from('reference_images')
+      .select('r2_key')
+      .eq('id', body.customReferenceId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!ref) {
+      return apiError('VALIDATION_ERROR', '선택한 참조 이미지를 찾을 수 없어요');
+    }
+    customReferenceR2Key = ref.r2_key as string;
+  }
+
   const { data: job, error: jobError } = await supabase
     .from('generation_jobs')
     .insert({
@@ -70,6 +86,7 @@ export async function POST(request: Request) {
       batch_size: body.batchSize,
       diversity_level: body.diversityLevel,
       reference_image_id: body.referenceImageId ?? null,
+      custom_reference_r2_key: customReferenceR2Key,
       school_profile_applied: body.schoolProfileApplied,
       aspect_ratio: body.aspectRatio,
       reserved_credits: body.batchSize,

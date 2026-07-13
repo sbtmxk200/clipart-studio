@@ -85,6 +85,7 @@ export interface GenerationJob {
   batchSize: number;
   diversityLevel: number;
   referenceImageId: string | null;
+  customReferenceR2Key: string | null;
   schoolProfileApplied: boolean;
   aspectRatio: AspectRatio;
   reservedCredits: number;
@@ -94,6 +95,19 @@ export interface GenerationJob {
   createdAt: string;
   completedAt: string | null;
 }
+
+export interface ReferenceImageSlot {
+  id: string;
+  userId: string;
+  r2Key: string;
+  url: string;
+  filename: string | null;
+  width: number;
+  height: number;
+  createdAt: string;
+}
+
+export const REFERENCE_IMAGE_SLOT_LIMIT = 5;
 
 // gpt-image-1 supports these three sizes. The user picks the semantic label,
 // pipeline.ts maps it to the WxH string expected by the API.

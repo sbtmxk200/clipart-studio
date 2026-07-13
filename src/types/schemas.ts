@@ -42,17 +42,23 @@ export const generationModeSchema = z.enum(['text2img', 'img2img', 'upscale']);
 
 export const aspectRatioSchema = z.enum(['square', 'landscape', 'portrait']);
 
-export const createJobSchema = z.object({
-  prompt: z.string().min(2, '프롬프트는 최소 2자').max(500, '프롬프트는 500자 이내'),
-  batchSize: z
-    .number()
-    .int()
-    .refine((v) => [5, 10, 15, 20, 25, 30].includes(v), '배치 크기는 5의 배수 (최대 30)'),
-  diversityLevel: z.number().int().min(0).max(5).default(0),
-  referenceImageId: z.string().uuid().nullable().optional(),
-  schoolProfileApplied: z.boolean().default(true),
-  generationMode: generationModeSchema.default('text2img'),
-  aspectRatio: aspectRatioSchema.default('square'),
-});
+export const createJobSchema = z
+  .object({
+    prompt: z.string().min(2, '프롬프트는 최소 2자').max(500, '프롬프트는 500자 이내'),
+    batchSize: z
+      .number()
+      .int()
+      .refine((v) => [5, 10, 15, 20, 25, 30].includes(v), '배치 크기는 5의 배수 (최대 30)'),
+    diversityLevel: z.number().int().min(0).max(5).default(0),
+    referenceImageId: z.string().uuid().nullable().optional(),
+    customReferenceId: z.string().uuid().nullable().optional(),
+    schoolProfileApplied: z.boolean().default(true),
+    generationMode: generationModeSchema.default('text2img'),
+    aspectRatio: aspectRatioSchema.default('square'),
+  })
+  .refine((data) => !(data.referenceImageId && data.customReferenceId), {
+    message: '라이브러리 참조와 업로드 참조는 동시에 사용할 수 없어요',
+    path: ['customReferenceId'],
+  });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;

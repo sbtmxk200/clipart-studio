@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 import { publicUrl } from '@/services/r2/upload';
-import { fetchReferenceImage, runOne } from '@/services/image-gen/pipeline';
+import { fetchReferenceImage, fetchReferenceImageByKey, runOne } from '@/services/image-gen/pipeline';
 import { refundCredits } from '@/services/credit';
 import { createSupabaseServerClient, createSupabaseServiceClient } from '@/services/supabase/server';
 
@@ -31,6 +31,7 @@ function jobFromRow(row: Record<string, unknown>): GenerationJob {
     batchSize: row.batch_size as number,
     diversityLevel: row.diversity_level as number,
     referenceImageId: (row.reference_image_id as string) ?? null,
+    customReferenceR2Key: (row.custom_reference_r2_key as string) ?? null,
     schoolProfileApplied: row.school_profile_applied as boolean,
     aspectRatio: (row.aspect_ratio as GenerationJob['aspectRatio']) ?? 'square',
     reservedCredits: row.reserved_credits as number,
@@ -107,11 +108,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       let fatal: Error | null = null;
 
       try {
-        // Preload the reference image once per batch when chaining, so we don't
+        // Preload the reference image once per batch when the job is img2img
+        // (either library chaining or user-uploaded reference slot), so we don't
         // fetch it from R2 for every runOne call inside the chunks.
         let referenceImage: ReferenceImage | null = null;
         if (job.referenceImageId) {
           referenceImage = await fetchReferenceImage(job.referenceImageId);
+        } else if (job.customReferenceR2Key) {
+          referenceImage = await fetchReferenceImageByKey(job.customReferenceR2Key);
         }
 
         const totalSlots = job.batchSize;

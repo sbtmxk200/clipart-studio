@@ -41,7 +41,16 @@ export async function fetchReferenceImage(referenceImageId: string): Promise<Ref
     .maybeSingle();
   if (!row) throw new Error(`reference image not found: ${referenceImageId}`);
 
-  const url = publicUrl(row.r2_key as string);
+  return fetchReferenceImageByKey(row.r2_key as string);
+}
+
+/**
+ * Load reference bytes directly from an R2 key. Used for user-uploaded
+ * reference slots where the job stores the R2 key snapshot instead of a
+ * library image id.
+ */
+export async function fetchReferenceImageByKey(r2Key: string): Promise<ReferenceImage> {
+  const url = publicUrl(r2Key);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`R2 fetch failed: ${res.status}`);
   const bytes = Buffer.from(await res.arrayBuffer());
@@ -73,8 +82,10 @@ export async function runOne({
   const finalPrompt = isDiversityChunk ? applyDiversityHint(withAdmin, order) : withAdmin;
 
   const chaining = !!job.referenceImageId;
-  if (chaining && !referenceImage) {
-    throw new Error('chaining job requires referenceImage bytes');
+  const customReference = !!job.customReferenceR2Key;
+  const imgToImg = chaining || customReference;
+  if (imgToImg && !referenceImage) {
+    throw new Error('img2img job requires referenceImage bytes');
   }
 
   const size = aspectRatioSizeString(job.aspectRatio);
@@ -82,7 +93,7 @@ export async function runOne({
 
   const gen = await adapter.generate({
     prompt: finalPrompt,
-    mode: chaining ? 'img2img' : 'text2img',
+    mode: imgToImg ? 'img2img' : 'text2img',
     referenceImage: referenceImage ?? undefined,
     size,
   });
@@ -108,7 +119,7 @@ export async function runOne({
     seed: gen.seed,
     r2_key: r2Key,
     batch_id: job.id,
-    generation_mode: chaining ? 'img2img' : 'text2img',
+    generation_mode: imgToImg ? 'img2img' : 'text2img',
     reference_image_id: job.referenceImageId,
     parent_image_id: job.referenceImageId,
     school_profile_applied: job.schoolProfileApplied,

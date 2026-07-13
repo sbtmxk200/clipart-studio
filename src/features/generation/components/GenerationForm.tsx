@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PresetChips } from '@/features/generation/components/PresetChips';
 import { useCreateJob, CreateJobError } from '@/features/generation/hooks/useCreateJob';
 import { SchoolStyleToggle } from '@/features/generation/components/SchoolStyleToggle';
+import { ReferencePicker } from '@/features/references/components/ReferencePicker';
 import { useAuthStore } from '@/lib/store/authStore';
 import { useGenerationStore } from '@/lib/store/generationStore';
 import { cn } from '@/lib/utils';
@@ -83,6 +84,7 @@ export function GenerationForm({
   const [diversityLevel, setDiversityLevel] = useState(0);
   const [schoolProfileApplied, setSchoolProfileApplied] = useState(hasSchoolProfile);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('square');
+  const [customReferenceId, setCustomReferenceId] = useState<string | null>(null);
 
   const createJob = useCreateJob();
 
@@ -97,8 +99,9 @@ export function GenerationForm({
       batchSize,
       diversityLevel,
       referenceImageId: parent?.id ?? null,
+      customReferenceId: !chaining ? customReferenceId : null,
       schoolProfileApplied,
-      generationMode: chaining ? 'img2img' : 'text2img',
+      generationMode: chaining || customReferenceId ? 'img2img' : 'text2img',
       aspectRatio,
     });
     if (!parsed.success) {
@@ -230,6 +233,14 @@ export function GenerationForm({
               })}
             </div>
           </div>
+
+          {!chaining && (
+            <ReferencePicker
+              value={customReferenceId}
+              onChange={setCustomReferenceId}
+              disabled={inFlight}
+            />
+          )}
 
           <SchoolStyleToggle
             hasSchoolProfile={hasSchoolProfile}
